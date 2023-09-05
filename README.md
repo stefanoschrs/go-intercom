@@ -1,19 +1,12 @@
-# Intercom-Go
+# go-intercom
 
-[![Circle CI](https://circleci.com/gh/intercom/intercom-go.png?style=shield)](https://circleci.com/gh/intercom/intercom-go)
-![Intercom API Version](https://img.shields.io/badge/Intercom%20API%20Version-1.3-blue)
+![Intercom API Version](https://img.shields.io/badge/Intercom%20API%20Version-2.9-blue)
 
-> Thin client for the [Intercom API](https://developers.intercom.io/reference)
-
-## Project Updates
-
-### Maintenance
-
-We're currently building a new team to provide in-depth and dedicated SDK support.
-
-In the meantime, we'll be operating on limited capacity, meaning all pull requests will be evaluated on a best effort basis and will be limited to critical issues.
-
-We'll communicate all relevant updates as we build this new team and support strategy in the coming months.
+> The [official](https://github.com/intercom/intercom-go) client for the [Intercom API](https://developers.intercom.com/docs/references/introduction/) is not maintained anymore and it's a few years behind the latest API.
+> 
+> This fork is by far not a complete binding to the API, I'm adding methods as I need them. All the examples listed below have been tested with the API version (2.9) and they work as expected.
+> 
+> Feel free to contribute. 
 
 ## Install
 
@@ -24,251 +17,16 @@ We'll communicate all relevant updates as we build this new team and support str
 ### Getting a Client
 
 ```go
-import (
-    intercom "gopkg.in/intercom/intercom-go.v2"
-)
+import "github.com/stefanoschrs/go-intercom"
 
-// You can use either an an OAuth or Access Token
-ic := intercom.NewClient("access_token", "")
+intercomClient := intercom.NewClient("appId", "apiToken")
 ```
-
-This client can then be used to make requests.
-
-If you already have an access token you can find it [here](https://app.intercom.com/developers/_). If you want to create or learn more about access tokens then you can find more info [here](https://developers.intercom.io/docs/personal-access-tokens).
-
-If you are building a third party application you can get your OAuth token by [setting-up-oauth](https://developers.intercom.io/page/setting-up-oauth) for Intercom.
-You can use the [Goth library](https://github.com/markbates/goth) which is a simple OAuth package for Go web aplicaitons and supports Intercom to more easily implement Oauth.
 
 #### Client Options
 
-The client can be configured with different options by calls to `ic.Option`:
-
 ```go
-ic.Option(intercom.TraceHTTP(true)) // turn http tracing on
-ic.Option(intercom.BaseURI("http://intercom.dev")) // change the base uri used, useful for testing
-ic.Option(intercom.SetHTTPClient(myHTTPClient)) // set a new HTTP client, see below for more info
-```
-
-or combined:
-
-```go
-ic.Option(intercom.TraceHTTP(true), intercom.BaseURI("http://intercom.dev"))
-```
-
-### Users
-
-#### Save
-
-```go
-user := intercom.User{
-    UserID: "27",
-    Email: "test@example.com",
-    Name: "InterGopher",
-    SignedUpAt: int64(time.Now().Unix()),
-    CustomAttributes: map[string]interface{}{"is_cool": true},
-}
-savedUser, err := ic.Users.Save(&user)
-```
-
-- One of `UserID`, or `Email` is required.
-- `SignedUpAt` (optional), like all dates in the client, must be an integer(32) representing seconds since Unix Epoch.
-
-##### Adding/Removing Companies
-
-Adding a Company:
-
-```go
-companyList := intercom.CompanyList{
-    Companies: []intercom.Company{
-        {CompanyID: "5"},
-    },
-}
-user := intercom.User{
-    UserID: "27",
-    Companies: &companyList,
-}
-```
-
-Removing is similar, but adding a `Remove: intercom.Bool(true)` attribute to a company.
-
-#### Find
-
-```go
-user, err := ic.Users.FindByID("46adad3f09126dca")
-```
-
-```go
-user, err := ic.Users.FindByUserID("27")
-```
-
-```go
-user, err := ic.Users.FindByEmail("test@example.com")
-```
-
-#### List
-
-```go
-userList, err := ic.Users.List(intercom.PageParams{Page: 2})
-userList.Pages // page information
-userList.Users // []User
-```
-
-```go
-userList, err := ic.Users.Scroll("")
-scrollParam := userList.ScrollParam
-userList, err := ic.Users.Scroll(scrollParam)
-```
-
-```go
-userList, err := ic.Users.ListBySegment("segmentID123", intercom.PageParams{})
-```
-
-```go
-userList, err := ic.Users.ListByTag("42", intercom.PageParams{})
-```
-
-#### Delete
-
-```go
-user, err := ic.Users.Delete("46adad3f09126dca")
-```
-
-### Contacts
-
-#### Contacts are the same as leads
-
-In the Intercom API we refer to contacts as leads. See [here](https://developers.intercom.com/intercom-api-reference/reference#leads) for more info
-We did not change this in the SDK since that would be a major breaking change. This is something we will address shortly. 
-So any reference to contacts in the SDK is a reference to a lead in Intercom
-
-#### Find
-
-```go
-contact, err := ic.Contacts.FindByID("46adad3f09126dca")
-```
-
-```go
-contact, err := ic.Contacts.FindByUserID("27")
-```
-
-#### List
-
-```go
-contactList, err := ic.Contacts.List(intercom.PageParams{Page: 2})
-contactList.Pages // page information
-contactList.Contacts // []Contact
-```
-
-```go
-contactList, err := ic.Contacts.Scroll("")
-scrollParam = contactList.ScrollParam
-contactList, err := ic.Contacts.Scroll(scrollParam)
-```
-
-```go
-contactList, err := ic.Contacts.ListByEmail("test@example.com", intercom.PageParams{})
-```
-
-#### Create
-
-```go
-contact := intercom.Contact{
-    Email: "test@example.com",
-    Name: "SomeContact",
-    CustomAttributes: map[string]interface{}{"is_cool": true},
-}
-savedContact, err := ic.Contacts.Create(&contact)
-```
-
-- No identifier is required.
-- Set values for UserID will be ignored (consider creating _Users_ instead)
-
-#### Update
-
-```go
-contact := intercom.Contact{
-    UserID: "abc-13d-3",
-    Name: "SomeContact",
-    CustomAttributes: map[string]interface{}{"is_cool": true},
-}
-savedContact, err := ic.Contacts.Update(&contact)
-```
-
-- ID or UserID is required.
-- Will not create new contacts.
-
-#### Convert
-
-Used to convert a Contact into a User
-
-```go
-contact := intercom.Contact{
-    UserID: "abc-13d-3",
-}
-user := intercom.User{
-    Email: "myuser@signedup.com",
-}
-savedUser, err := ic.Contacts.Convert(&contact, &user)
-```
-
-- If the User does not already exist in Intercom, the Contact will be uplifted to a User.
-- If the User does exist, the Contact will be merged into it and the User returned.
-
-### Companies
-
-#### Save
-
-```go
-company := intercom.Company{
-    CompanyID: "27",
-    Name: "My Co",
-    CustomAttributes: map[string]interface{}{"is_cool": true},
-    Plan: &intercom.Plan{Name: "MyPlan"},
-}
-savedCompany, err := ic.Companies.Save(&company)
-```
-
-- `CompanyID` is required.
-
-#### Find
-
-```go
-company, err := ic.Companies.FindByID("46adad3f09126dca")
-```
-
-```go
-company, err := ic.Companies.FindByCompanyID("27")
-```
-
-```go
-company, err := ic.Companies.FindByName("My Co")
-```
-
-#### List
-
-```go
-companyList, err := ic.Companies.List(intercom.PageParams{Page: 2})
-companyList.Pages // page information
-companyList.Companies // []Companies
-```
-
-```go
-companyList, err := ic.Companies.ListBySegment("segmentID123", intercom.PageParams{})
-```
-
-```go
-companyList, err := ic.Companies.ListByTag("42", intercom.PageParams{})
-```
-
-#### ListUsers
-
-```go
-userList, err := ic.Companies.ListUsersByID("46adad3f09126dca", intercom.PageParams{})
-userList.Users // []User
-```
-
-```go
-userList, err := ic.Companies.ListUsersByCompanyID("27", intercom.PageParams{})
+intercomClient.Option(intercom.BaseURI("https://api.intercom.io"))  // change the base uri used
+intercomClient.Option(intercom.ApiVersion("2.9")) // change the api version used
 ```
 
 ### Events
@@ -290,250 +48,31 @@ err := ic.Events.Save(&event)
 - `CreatedAt` is required, must be an integer representing seconds since Unix Epoch. Will be set to _now_ unless given.
 - `Metadata` is optional, and can be constructed using the helper as above, or as a passed `map[string]interface{}`.
 
-### Admins
+### Contacts
 
-#### List
-
-```go
-adminList, err := ic.Admins.List()
-admins := adminList.Admins
-```
-
-### Tags
-
-#### List
+#### Search
 
 ```go
-tagList, err := ic.Tags.List()
-tags := tagList.Tags
-```
-
-#### Save
-
-```go
-tag := intercom.Tag{Name: "GoTag"}
-savedTag, err := ic.Tags.Save(&tag)
-```
-
-`Name` is required. Passing an `ID` will attempt to update the tag with that ID.
-
-#### Delete
-
-```go
-err := ic.Tags.Delete("6")
-```
-
-#### Tagging Users/Companies
-
-```go
-taggingList := intercom.TaggingList{Name: "GoTag", Users: []intercom.Tagging{{UserID: "27"}}}
-savedTag, err := ic.Tags.Tag(&taggingList)
-```
-
-A `Tagging` can identify a User or Company, and can be set to `Untag`:
-
-```go
-taggingList := intercom.TaggingList{Name: "GoTag", Users: []intercom.Tagging{{UserID: "27", Untag: intercom.Bool(true)}}}
-savedTag, err := ic.Tags.Tag(&taggingList)
-```
-
-### Segments
-
-#### List
-
-```go
-segmentList := ic.Segments.List()
-segments, err := segmentList.Segments
-```
-
-#### Find
-
-```go
-segment, err := ic.Segments.Find("abc312daf2397")
-```
-
-### Messages
-
-#### New Admin to User/Contact Email
-
-```go
-msg := intercom.NewEmailMessage(intercom.PERSONAL_TEMPLATE, intercom.Admin{ID: "1234"}, intercom.User{Email: "test@example.com"}, "subject", "body")
-savedMessage, err := ic.Messages.Save(&msg)
-```
-
-Can use intercom.PLAIN_TEMPLATE too, or replace the intercom.User with an intercom.Contact.
-
-#### New Admin to User/Contact InApp
-
-```go
-msg := intercom.NewInAppMessage(intercom.Admin{ID: "1234"}, intercom.Contact{Email: "test@example.com"}, "body")
-savedMessage, err := ic.Messages.Save(&msg)
-```
-
-#### New User Message
-
-```go
-msg := intercom.NewUserMessage(intercom.User{Email: "test@example.com"}, "body")
-savedMessage, err := ic.Messages.Save(&msg)
-```
-
-### Conversations
-
-### Find Conversation
-
-```go
-convo, err := intercom.Conversations.Find("1234")
-```
-
-### List Conversations
-
-#### All
-
-```go
-convoList, err := intercom.Conversations.ListAll(intercom.PageParams{})
-```
-
-#### By User
-
-Showing all for user:
-
-```go
-convoList, err := intercom.Conversations.ListByUser(&user, intercom.SHOW_ALL, intercom.PageParams{})
-```
-
-Showing just Unread for user:
-
-```go
-convoList, err := intercom.Conversations.ListByUser(&user, intercom.SHOW_UNREAD, intercom.PageParams{})
-```
-
-#### By Admin
-
-Showing all for admin:
-
-```go
-convoList, err := intercom.Conversations.ListByAdmin(&admin, intercom.SHOW_ALL, intercom.PageParams{})
-```
-
-Showing just Open for admin:
-
-```go
-convoList, err := intercom.Conversations.ListByAdmin(&admin, intercom.SHOW_OPEN, intercom.PageParams{})
-```
-
-Showing just Closed for admin:
-
-```go
-convoList, err := intercom.Conversations.ListByAdmin(&admin, intercom.SHOW_CLOSED, intercom.PageParams{})
-```
-
-### Reply
-
-User reply:
-
-```go
-convo, err := intercom.Conversations.Reply("1234", &user, intercom.CONVERSATION_COMMENT, "my message")
-```
-
-User reply with attachment:
-
-```go
-convo, err := intercom.Conversations.ReplyWithAttachmentURLs("1234", &user, intercom.CONVERSATION_COMMENT, "my message", string[]{"http://www.example.com/attachment.jpg"})
-```
-
-User reply that opens:
-
-```go
-convo, err := intercom.Conversations.Reply("1234", &user, intercom.CONVERSATION_OPEN, "my message")
-```
-
-Admin reply:
-
-```go
-convo, err := intercom.Conversations.Reply("1234", &admin, intercom.CONVERSATION_COMMENT, "my message")
-```
-
-Admin note:
-
-```go
-convo, err := intercom.Conversations.Reply("1234", &admin, intercom.CONVERSATION_NOTE, "my message to just admins")
-```
-
-### Open and Close
-
-Open:
-
-```go
-convo, err := intercom.Conversations.Open("1234", &openerAdmin)
-```
-
-Close:
-
-```go
-convo, err := intercom.Conversations.Close("1234", &closerAdmin)
-```
-
-### Assign
-
-```go
-convo, err := intercom.Conversations.Assign("1234", &assignerAdmin, &assigneeAdmin)
-```
-
-### Webhooks
-
-### Notifications
-
-If you have received a JSON webhook notification, you may want to convert it into real Intercom object. A Notification can be created from any `io.Reader`, typically a http request:
-
-```go
-var r io.Reader
-notif, err := intercom.NewNotification(r)
-```
-
-The returned Notification will contain exactly 1 of the `Company`, `Conversation`, `Event`, `Tag` or `User` fields populated. It may only contain partial objects (such as a single conversation part) depending on what is provided by the webhook.
-
-### Errors
-
-Errors may be returned from some calls. Errors returned from the API will implement `intercom.IntercomError` and can be checked:
-
-```go
-_, err := ic.Users.FindByEmail("doesnotexist@intercom.io")
-if herr, ok := err.(intercom.IntercomError); ok && herr.GetCode() == "not_found" {
-    fmt.Print(herr)
+searchParams := intercom.ContactSearchParams{
+    Query: map[string]string{
+        "field":    "external_id",
+        "operator": "=",
+        "value":    "xxx",
+    },
 }
+contacts, err := intercomClient.Contacts.Search(searchParams)
 ```
 
-### HTTP Client
-
-The HTTP Client used by this package can be swapped out for one of your choosing, with your own configuration, it just needs to implement the HTTPClient interface:
+#### Update
 
 ```go
-type HTTPClient interface {
-    Get(string, interface{}) ([]byte, error)
-    Post(string, interface{}) ([]byte, error)
-    Patch(string, interface{}) ([]byte, error)
-    Delete(string, interface{}) ([]byte, error)
+contact := intercom.Contact{
+    UserID: "abc-13d-3",
+    Name: "SomeContact",
+    CustomAttributes: map[string]interface{}{"is_cool": true},
 }
+savedContact, err := ic.Contacts.Update(&contact)
 ```
 
-It'll probably need to work with `appId`, `apiKey` and `baseURI` values. See the provided client for an example. Then create an Intercom Client and inject the HTTPClient:
-
-```go
-ic := intercom.Client{}
-ic.Option(intercom.SetHTTPClient(myHTTPClient))
-// ready to go!
-```
-
-### On Bools
-
-Due to the way Go represents the zero value for a bool, it's necessary to pass pointers to bool instead in some places.
-
-The helper `intercom.Bool(true)` creates these for you.
-
-### Pull Requests
-
-- **Add tests!** Your patch won't be accepted if it doesn't have tests.
-- **Document any change in behaviour**. Make sure the README and any other relevant documentation are kept up-to-date.
-- **Create topic branches**. Don't ask us to pull from your master branch.
-- **One pull request per feature**. If you want to do more than one thing, send multiple pull requests.
-- **Send coherent history**. Make sure each individual commit in your pull request is meaningful. If you had to make multiple intermediate commits while developing, please squash them before sending them to us.
+- ID or UserID is required.
+- Will not create new contacts.
