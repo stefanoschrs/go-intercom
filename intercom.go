@@ -1,7 +1,7 @@
 package intercom
 
 import (
-	"gopkg.in/intercom/intercom-go.v2/interfaces"
+	"github.com/stefanoschrs/go-intercom/interfaces"
 )
 
 // A Client manages interacting with the Intercom API.
@@ -32,7 +32,6 @@ type Client struct {
 
 	// AppID For Intercom.
 	AppID string
-
 	// APIKey for Intercom's API. See http://app.intercom.io/apps/api_keys.
 	APIKey string
 
@@ -40,13 +39,15 @@ type Client struct {
 	HTTPClient interfaces.HTTPClient
 
 	baseURI       string
+	apiVersion    string
 	clientVersion string
 	debug         bool
 }
 
 const (
-	defaultBaseURI = "https://api.intercom.io"
-	clientVersion  = "2.0.0"
+	defaultBaseURI    = "https://api.intercom.io"
+	defaultApiVersion = "2.8"
+	clientVersion     = "2.0.0"
 )
 
 type option func(c *Client) option
@@ -61,15 +62,38 @@ func (c *Client) Option(opts ...option) (previous option) {
 
 // NewClient returns a new Intercom API client, configured with the default HTTPClient.
 func NewClient(appID, apiKey string) *Client {
-	intercom := Client{AppID: appID, APIKey: apiKey, baseURI: defaultBaseURI, debug: false, clientVersion: clientVersion}
-	intercom.HTTPClient = interfaces.NewIntercomHTTPClient(intercom.AppID, intercom.APIKey, &intercom.baseURI, &intercom.clientVersion, &intercom.debug)
+	intercom := Client{
+		AppID:  appID,
+		APIKey: apiKey,
+
+		baseURI:       defaultBaseURI,
+		apiVersion:    defaultApiVersion,
+		clientVersion: clientVersion,
+		debug:         false,
+	}
+	intercom.HTTPClient = interfaces.NewIntercomHTTPClient(
+		intercom.AppID,
+		intercom.APIKey,
+		&intercom.baseURI,
+		&intercom.apiVersion,
+		&intercom.clientVersion,
+		&intercom.debug)
 	intercom.setup()
 	return &intercom
 }
 
 // NewClientWithHTTPClient returns a new Intercom API client, configured with the supplied HTTPClient interface
 func NewClientWithHTTPClient(appID, apiKey string, httpClient interfaces.HTTPClient) *Client {
-	intercom := Client{AppID: appID, APIKey: apiKey, baseURI: defaultBaseURI, debug: false, clientVersion: clientVersion, HTTPClient: httpClient}
+	intercom := Client{
+		AppID:      appID,
+		APIKey:     apiKey,
+		HTTPClient: httpClient,
+
+		baseURI:       defaultBaseURI,
+		apiVersion:    defaultApiVersion,
+		clientVersion: clientVersion,
+		debug:         false,
+	}
 	intercom.setup()
 	return &intercom
 }
@@ -90,6 +114,15 @@ func BaseURI(baseURI string) option {
 		previous := c.baseURI
 		c.baseURI = baseURI
 		return BaseURI(previous)
+	}
+}
+
+// ApiVersion sets the Intercom-Version header for the HTTP Client to use.
+func ApiVersion(apiVersion string) option {
+	return func(c *Client) option {
+		previous := c.apiVersion
+		c.apiVersion = apiVersion
+		return ApiVersion(previous)
 	}
 }
 

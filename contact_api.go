@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"gopkg.in/intercom/intercom-go.v2/interfaces"
+	"github.com/stefanoschrs/go-intercom/interfaces"
 )
 
 // ContactRepository defines the interface for working with Contacts through the API.
 type ContactRepository interface {
+	search(ContactSearchParams) (contactSearchResult, error)
 	find(UserIdentifiers) (Contact, error)
 	list(contactListParams) (ContactList, error)
 	scroll(scrollParam string) (ContactList, error)
@@ -22,6 +23,16 @@ type ContactRepository interface {
 // ContactAPI implements ContactRepository
 type ContactAPI struct {
 	httpClient interfaces.HTTPClient
+}
+
+func (api ContactAPI) search(params ContactSearchParams) (contactSearchResult, error) {
+	contactList := contactSearchResult{}
+	data, err := api.httpClient.Post("/contacts/search", params)
+	if err != nil {
+		return contactList, err
+	}
+	err = json.Unmarshal(data, &contactList)
+	return contactList, err
 }
 
 func (api ContactAPI) find(params UserIdentifiers) (Contact, error) {
@@ -49,14 +60,14 @@ func (api ContactAPI) list(params contactListParams) (ContactList, error) {
 }
 
 func (api ContactAPI) scroll(scrollParam string) (ContactList, error) {
-       contactList := ContactList{}
-       params := scrollParams{ ScrollParam: scrollParam }
-       data, err := api.httpClient.Get("/contacts/scroll", params)
-       if err != nil {
-               return contactList, err
-       }
-       err = json.Unmarshal(data, &contactList)
-       return contactList, err
+	contactList := ContactList{}
+	params := scrollParams{ScrollParam: scrollParam}
+	data, err := api.httpClient.Get("/contacts/scroll", params)
+	if err != nil {
+		return contactList, err
+	}
+	err = json.Unmarshal(data, &contactList)
+	return contactList, err
 }
 
 func (api ContactAPI) create(contact *Contact) (Contact, error) {
@@ -66,7 +77,7 @@ func (api ContactAPI) create(contact *Contact) (Contact, error) {
 
 func (api ContactAPI) update(contact *Contact) (Contact, error) {
 	requestContact := api.buildRequestContact(contact)
-	return unmarshalToContact(api.httpClient.Post("/contacts", &requestContact))
+	return unmarshalToContact(api.httpClient.Put("/contacts/"+contact.ID, &requestContact))
 }
 
 func (api ContactAPI) convert(contact *Contact, user *User) (User, error) {

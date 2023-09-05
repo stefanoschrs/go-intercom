@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/google/go-querystring/query"
@@ -14,33 +13,48 @@ import (
 type HTTPClient interface {
 	Get(string, interface{}) ([]byte, error)
 	Post(string, interface{}) ([]byte, error)
+	Put(string, interface{}) ([]byte, error)
 	Patch(string, interface{}) ([]byte, error)
 	Delete(string, interface{}) ([]byte, error)
 }
 
 type IntercomHTTPClient struct {
 	*http.Client
+
+	AppID  string
+	APIKey string
+
 	BaseURI       *string
-	AppID         string
-	APIKey        string
+	APIVersion    *string
 	ClientVersion *string
 	Debug         *bool
 }
 
-func NewIntercomHTTPClient(appID, apiKey string, baseURI, clientVersion *string, debug *bool) IntercomHTTPClient {
-	return IntercomHTTPClient{Client: &http.Client{}, AppID: appID, APIKey: apiKey, BaseURI: baseURI, ClientVersion: clientVersion, Debug: debug}
+func NewIntercomHTTPClient(appID, apiKey string, baseURI, apiVersion, clientVersion *string, debug *bool) IntercomHTTPClient {
+	return IntercomHTTPClient{
+		Client: &http.Client{},
+
+		AppID:  appID,
+		APIKey: apiKey,
+
+		BaseURI:       baseURI,
+		ClientVersion: clientVersion,
+		APIVersion:    apiVersion,
+		Debug:         debug,
+	}
 }
 
 func (c IntercomHTTPClient) UserAgentHeader() string {
-	return fmt.Sprintf("intercom-go/%s", *c.ClientVersion)
+	return fmt.Sprintf("go-intercom/%s", *c.ClientVersion)
 }
 
 func (c IntercomHTTPClient) Get(url string, queryParams interface{}) ([]byte, error) {
 	// Setup request
-	req, _ := http.NewRequest("GET", *c.BaseURI+url, nil)
-	req.SetBasicAuth(c.AppID, c.APIKey)
+	req, _ := http.NewRequest(http.MethodGet, *c.BaseURI+url, nil)
+	req.Header.Add("Authorization", "Bearer "+c.APIKey)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("User-Agent", c.UserAgentHeader())
+	req.Header.Add("Intercom-Version", *c.APIVersion)
 	addQueryParams(req, queryParams)
 	if *c.Debug {
 		fmt.Printf("%s %s\n", req.Method, req.URL)
@@ -69,15 +83,19 @@ func addQueryParams(req *http.Request, params interface{}) {
 	req.URL.RawQuery = v.Encode()
 }
 
+func (c IntercomHTTPClient) Put(url string, body interface{}) ([]byte, error) {
+	return c.postOrPatchOrPut(http.MethodPut, url, body)
+}
+
 func (c IntercomHTTPClient) Patch(url string, body interface{}) ([]byte, error) {
-	return c.postOrPatch("PATCH", url, body)
+	return c.postOrPatchOrPut(http.MethodPatch, url, body)
 }
 
 func (c IntercomHTTPClient) Post(url string, body interface{}) ([]byte, error) {
-	return c.postOrPatch("POST", url, body)
+	return c.postOrPatchOrPut(http.MethodPost, url, body)
 }
 
-func (c IntercomHTTPClient) postOrPatch(method, url string, body interface{}) ([]byte, error) {
+func (c IntercomHTTPClient) postOrPatchOrPut(method, url string, body interface{}) ([]byte, error) {
 	// Marshal our body
 	buffer := bytes.NewBuffer([]byte{})
 	if err := json.NewEncoder(buffer).Encode(body); err != nil {
@@ -89,10 +107,11 @@ func (c IntercomHTTPClient) postOrPatch(method, url string, body interface{}) ([
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(c.AppID, c.APIKey)
+	req.Header.Add("Authorization", "Bearer "+c.APIKey)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", c.UserAgentHeader())
+	req.Header.Add("Intercom-Version", *c.APIVersion)
 	if *c.Debug {
 		fmt.Printf("%s %s %s\n", req.Method, req.URL, buffer)
 	}
@@ -118,9 +137,10 @@ func (c IntercomHTTPClient) postOrPatch(method, url string, body interface{}) ([
 func (c IntercomHTTPClient) Delete(url string, queryParams interface{}) ([]byte, error) {
 	// Setup request
 	req, _ := http.NewRequest("DELETE", *c.BaseURI+url, nil)
-	req.SetBasicAuth(c.AppID, c.APIKey)
+	req.Header.Add("Authorization", "Bearer "+c.APIKey)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("User-Agent", c.UserAgentHeader())
+	req.Header.Add("Intercom-Version", *c.APIVersion)
 	addQueryParams(req, queryParams)
 	if *c.Debug {
 		fmt.Printf("%s %s\n", req.Method, req.URL)
@@ -166,7 +186,7 @@ func (c IntercomHTTPClient) parseResponseError(data []byte, statusCode int) Inte
 }
 
 func (c IntercomHTTPClient) readAll(body io.Reader) ([]byte, error) {
-	b, err := ioutil.ReadAll(body)
+	b, err := io.ReadAll(body)
 	if *c.Debug {
 		fmt.Println(string(b))
 		fmt.Println("")

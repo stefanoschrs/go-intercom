@@ -9,8 +9,8 @@ type ContactService struct {
 
 // ContactList holds a list of Contacts and paging information
 type ContactList struct {
-	Pages    PageParams
-	Contacts []Contact
+	Pages       PageParams
+	Contacts    []Contact
 	ScrollParam string `json:"scroll_param,omitempty"`
 }
 
@@ -48,6 +48,124 @@ type contactListParams struct {
 	Email     string `url:"email,omitempty"`
 }
 
+type SearchContact struct {
+	Type           string      `json:"type"`
+	Id             string      `json:"id"`
+	WorkspaceId    string      `json:"workspace_id"`
+	ExternalId     string      `json:"external_id"`
+	Role           string      `json:"role"`
+	Email          string      `json:"email"`
+	Phone          string      `json:"phone"`
+	Name           string      `json:"name"`
+	Avatar         *UserAvatar `json:"avatar"`
+	OwnerId        any         `json:"owner_id"`
+	SocialProfiles struct {
+		Type string          `json:"type"`
+		Data []SocialProfile `json:"data"`
+	} `json:"social_profiles"`
+	HasHardBounced         bool   `json:"has_hard_bounced"`
+	MarkedEmailAsSpam      bool   `json:"marked_email_as_spam"`
+	UnsubscribedFromEmails bool   `json:"unsubscribed_from_emails"`
+	CreatedAt              int    `json:"created_at"`
+	UpdatedAt              int    `json:"updated_at"`
+	SignedUpAt             int    `json:"signed_up_at"`
+	LastSeenAt             int    `json:"last_seen_at"`
+	LastRepliedAt          any    `json:"last_replied_at"`
+	LastContactedAt        int    `json:"last_contacted_at"`
+	LastEmailOpenedAt      any    `json:"last_email_opened_at"`
+	LastEmailClickedAt     any    `json:"last_email_clicked_at"`
+	LanguageOverride       any    `json:"language_override"`
+	Browser                string `json:"browser"`
+	BrowserVersion         string `json:"browser_version"`
+	BrowserLanguage        string `json:"browser_language"`
+	Os                     string `json:"os"`
+	Location               struct {
+		Type          string `json:"type"`
+		Country       string `json:"country"`
+		Region        string `json:"region"`
+		City          string `json:"city"`
+		CountryCode   string `json:"country_code"`
+		ContinentCode string `json:"continent_code"`
+	} `json:"location"`
+	AndroidAppName    any                    `json:"android_app_name"`
+	AndroidAppVersion any                    `json:"android_app_version"`
+	AndroidDevice     any                    `json:"android_device"`
+	AndroidOsVersion  any                    `json:"android_os_version"`
+	AndroidSdkVersion any                    `json:"android_sdk_version"`
+	AndroidLastSeenAt any                    `json:"android_last_seen_at"`
+	IosAppName        any                    `json:"ios_app_name"`
+	IosAppVersion     any                    `json:"ios_app_version"`
+	IosDevice         any                    `json:"ios_device"`
+	IosOsVersion      any                    `json:"ios_os_version"`
+	IosSdkVersion     any                    `json:"ios_sdk_version"`
+	IosLastSeenAt     any                    `json:"ios_last_seen_at"`
+	CustomAttributes  map[string]interface{} `json:"custom_attributes"`
+	Tags              struct {
+		Type       string `json:"type"`
+		Data       []Tag  `json:"data"`
+		Url        string `json:"url"`
+		TotalCount int    `json:"total_count"`
+		HasMore    bool   `json:"has_more"`
+	} `json:"tags"`
+	Notes struct {
+		Type       string `json:"type"`
+		Data       []any  `json:"data"`
+		Url        string `json:"url"`
+		TotalCount int    `json:"total_count"`
+		HasMore    bool   `json:"has_more"`
+	} `json:"notes"`
+	Companies struct {
+		Type       string    `json:"type"`
+		Data       []Company `json:"data"`
+		Url        string    `json:"url"`
+		TotalCount int       `json:"total_count"`
+		HasMore    bool      `json:"has_more"`
+	} `json:"companies"`
+	OptedOutSubscriptionTypes struct {
+		Type       string `json:"type"`
+		Data       []any  `json:"data"`
+		Url        string `json:"url"`
+		TotalCount int    `json:"total_count"`
+		HasMore    bool   `json:"has_more"`
+	} `json:"opted_out_subscription_types"`
+	OptedInSubscriptionTypes struct {
+		Type       string `json:"type"`
+		Data       []any  `json:"data"`
+		Url        string `json:"url"`
+		TotalCount int    `json:"total_count"`
+		HasMore    bool   `json:"has_more"`
+	} `json:"opted_in_subscription_types"`
+	UtmCampaign         any    `json:"utm_campaign"`
+	UtmContent          any    `json:"utm_content"`
+	UtmMedium           any    `json:"utm_medium"`
+	UtmSource           any    `json:"utm_source"`
+	UtmTerm             any    `json:"utm_term"`
+	Referrer            string `json:"referrer"`
+	SmsConsent          bool   `json:"sms_consent"`
+	UnsubscribedFromSms bool   `json:"unsubscribed_from_sms"`
+}
+
+type ContactSearchParams struct {
+	Query map[string]string `json:"query,omitempty"`
+}
+
+type contactSearchResult struct {
+	Type       string `json:"type"`
+	TotalCount int    `json:"total_count"`
+	Pages      struct {
+		Type       string `json:"type"`
+		Page       int    `json:"page"`
+		PerPage    int    `json:"per_page"`
+		TotalPages int    `json:"total_pages"`
+	} `json:"pages"`
+	Data []SearchContact `json:"data"`
+}
+
+// Search looks up a Contact by their Intercom ID.
+func (c *ContactService) Search(params ContactSearchParams) (contactSearchResult, error) {
+	return c.Repository.search(params)
+}
+
 // FindByID looks up a Contact by their Intercom ID.
 func (c *ContactService) FindByID(id string) (Contact, error) {
 	return c.findWithIdentifiers(UserIdentifiers{ID: id})
@@ -69,7 +187,7 @@ func (c *ContactService) List(params PageParams) (ContactList, error) {
 
 // List all Contacts for App via Scroll API
 func (c *ContactService) Scroll(scrollParam string) (ContactList, error) {
-       return c.Repository.scroll(scrollParam)
+	return c.Repository.scroll(scrollParam)
 }
 
 // ListByEmail looks up a list of Contacts by their Email.
