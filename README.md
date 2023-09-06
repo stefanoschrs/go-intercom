@@ -4,7 +4,7 @@
 
 > The [official](https://github.com/intercom/intercom-go) client for the [Intercom API](https://developers.intercom.com/docs/references/introduction/) is not maintained anymore and it's a few years behind the latest API.
 > 
-> This fork is by far not a complete binding to the API, I'm adding methods as I need them. All the examples listed below have been tested with the API version (2.9) and they work as expected.
+> This fork is by far not a complete binding to the API, I'm adding methods as I need them. All the examples listed below have been tested with the API version (2.9).
 > 
 > Feel free to contribute. 
 
@@ -48,6 +48,19 @@ err := ic.Events.Save(&event)
 - `CreatedAt` is required, must be an integer representing seconds since Unix Epoch. Will be set to _now_ unless given.
 - `Metadata` is optional, and can be constructed using the helper as above, or as a passed `map[string]interface{}`.
 
+### Data Attributes
+
+#### Create
+
+```go
+dataAttribute := intercom.DataAttribute{
+    Name: "My Attr",
+	Model: "conversation",
+	DataType: "float"
+}
+err := ic.DataAttributes.Create(&dataAttribute)
+```
+
 ### Contacts
 
 #### Search
@@ -76,3 +89,17 @@ savedContact, err := ic.Contacts.Update(&contact)
 
 - ID or UserID is required.
 - Will not create new contacts.
+
+### Conversations
+
+### Find Conversation
+
+```go
+conversation, err := intercom.Conversations.Find("1234", intercom.ConversationFindParams{})
+```
+
+### Update Conversation
+
+```go
+conversation, err := intercom.Conversations.Update(&intercom.Conversation{})
+```

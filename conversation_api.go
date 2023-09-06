@@ -9,10 +9,11 @@ import (
 
 // ConversationRepository defines the interface for working with Conversations through the API.
 type ConversationRepository interface {
-	find(id string) (Conversation, error)
+	find(id string, displayType string) (Conversation, error)
 	list(params ConversationListParams) (ConversationList, error)
 	read(id string) (Conversation, error)
 	reply(id string, reply *Reply) (Conversation, error)
+	update(conversation *Conversation) (Conversation, error)
 }
 
 // ConversationAPI implements ConversationRepository
@@ -54,12 +55,42 @@ func (api ConversationAPI) reply(id string, reply *Reply) (Conversation, error) 
 	return conversation, nil
 }
 
-func (api ConversationAPI) find(id string) (Conversation, error) {
+func (api ConversationAPI) find(id string, displayType string) (Conversation, error) {
+	type findParams struct {
+		DisplayAs string `url:"display_as"`
+	}
+
 	conversation := Conversation{}
-	data, err := api.httpClient.Get(fmt.Sprintf("/conversations/%s", id), nil)
+	data, err := api.httpClient.Get(fmt.Sprintf("/conversations/%s", id), findParams{
+		DisplayAs: displayType,
+	})
 	if err != nil {
 		return conversation, err
 	}
 	err = json.Unmarshal(data, &conversation)
 	return conversation, err
+}
+
+func (api ConversationAPI) update(conversation *Conversation) (Conversation, error) {
+	reqConv := api.buildRequestConversation(conversation)
+	return unmarshalToConversation(api.httpClient.Put("/conversations/"+conversation.Id, &reqConv))
+}
+
+/**/
+// Helpers
+/**/
+
+func unmarshalToConversation(data []byte, err error) (Conversation, error) {
+	savedConversation := Conversation{}
+	if err != nil {
+		return savedConversation, err
+	}
+	err = json.Unmarshal(data, &savedConversation)
+	return savedConversation, err
+}
+
+func (api ConversationAPI) buildRequestConversation(conversation *Conversation) (reqConv requestConversation) {
+	conv, _ := json.Marshal(conversation)
+	_ = json.Unmarshal(conv, &reqConv)
+	return reqConv
 }

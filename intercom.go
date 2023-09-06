@@ -17,18 +17,20 @@ type Client struct {
 	Segments      SegmentService
 	Tags          TagService
 	Users         UserService
+	DataAttribute DataAttributeService
 
 	// Mappings for resources to API constructs
-	AdminRepository        AdminRepository
-	CompanyRepository      CompanyRepository
-	ContactRepository      ContactRepository
-	ConversationRepository ConversationRepository
-	EventRepository        EventRepository
-	JobRepository          JobRepository
-	MessageRepository      MessageRepository
-	SegmentRepository      SegmentRepository
-	TagRepository          TagRepository
-	UserRepository         UserRepository
+	AdminRepository         AdminRepository
+	CompanyRepository       CompanyRepository
+	ContactRepository       ContactRepository
+	ConversationRepository  ConversationRepository
+	EventRepository         EventRepository
+	JobRepository           JobRepository
+	MessageRepository       MessageRepository
+	SegmentRepository       SegmentRepository
+	TagRepository           TagRepository
+	UserRepository          UserRepository
+	DataAttributeRepository DataAttributeRepository
 
 	// AppID For Intercom.
 	AppID string
@@ -148,6 +150,8 @@ func (c *Client) setup() {
 	c.SegmentRepository = SegmentAPI{httpClient: c.HTTPClient}
 	c.TagRepository = TagAPI{httpClient: c.HTTPClient}
 	c.UserRepository = UserAPI{httpClient: c.HTTPClient}
+	c.DataAttributeRepository = DataAttributeAPI{httpClient: c.HTTPClient}
+
 	c.Admins = AdminService{Repository: c.AdminRepository}
 	c.Companies = CompanyService{Repository: c.CompanyRepository}
 	c.Contacts = ContactService{Repository: c.ContactRepository}
@@ -158,4 +162,5 @@ func (c *Client) setup() {
 	c.Segments = SegmentService{Repository: c.SegmentRepository}
 	c.Tags = TagService{Repository: c.TagRepository}
 	c.Users = UserService{Repository: c.UserRepository}
+	c.DataAttribute = DataAttributeService{Repository: c.DataAttributeRepository}
 }
